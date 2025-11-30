@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+# 触发条件：推送到 main 分支时自动部署，也支持手动触发
+on:
+  push:
+分支: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 设置 Node.js 环境
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      # 安装依赖
+      - name: Install dependencies
+        run: npm install
+
+      # 构建项目（指定基础路径为仓库名）
+      - name: Build project
+        run: npm run build
+        env:
+          # 传递 Gemini API 密钥（需在仓库 Secrets 中配置）
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # 设置 Vite 基础路径为仓库名称
+          VITE_BASE: /${{ github.event.repository.name }}/
+
+      # 部署到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # 部署 dist 目录下的构建产物
+          publish_dir: ./dist
+          # 部署到 gh-pages 分支
+          publish_branch: gh-pages
+          # 强制推送以确保更新
+          force_orphan: true
